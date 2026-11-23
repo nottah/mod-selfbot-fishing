@@ -20,6 +20,12 @@ Add this directory under `modules/`, rebuild the worldserver, and restart it. In
 
 The module reuses Playerbots' stock fishing behavior. It does not make independent changes to pool selection or pathfinding. This module makes no database changes.
 
+While fishing is active, the module temporarily suspends the selfbot's roaming, questing, gathering, and similar movement strategies, and clears any existing movement path. It restores the suspended strategies when fishing stops if the selfbot was already active. If the module enabled the selfbot, stopping fishing turns it off.
+
+## Quest-start items
+
+While the selfbot is active, Playerbots may automatically use eligible quest-starting items in the character's bags. This can happen after a normal fishing catch or another item-loot event, even when the quest item was already in the bags before fishing began. This behavior comes from Playerbots' item handler, not from this fishing module.
+
 ## Playerbots source patch
 
 The local server checkout has an additional change to `CheckMountStateAction` so a selfbot remains dismounted while the `master fishing` strategy is active, and autonomous bots wait five seconds before remounting after becoming eligible. The exact patch and base commit are recorded in [`patches/README.md`](patches/README.md). The module can compile without that patch, but the local stationary-fishing behavior depends on it.

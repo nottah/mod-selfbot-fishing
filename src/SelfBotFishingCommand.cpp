@@ -9,6 +9,7 @@
 #include "Chat.h"
 #include "ChatCommand.h"
 #include "Item.h"
+#include "MotionMaster.h"
 #include "Player.h"
 
 #include "Playerbots.h"
@@ -17,6 +18,7 @@
 #include "FishingAction.h"
 
 #include <unordered_map>
+#include <vector>
 
 using namespace Acore::ChatCommands;
 
@@ -28,6 +30,7 @@ namespace
         bool restoreMainHand = false;
         ObjectGuid previousMainHand;
         ObjectGuid fishingPole;
+        std::vector<std::string> suspendedStrategies;
     };
 
     std::unordered_map<ObjectGuid, FishingSession> fishingSessions;
@@ -94,6 +97,32 @@ namespace
     {
         PlayerbotAI* botAI = player ? GET_PLAYERBOT_AI(player) : nullptr;
         return botAI && IsSelfBot(player) ? botAI : nullptr;
+    }
+
+    std::vector<std::string> SuspendRoamingStrategies(PlayerbotAI* botAI)
+    {
+        static std::vector<std::string> const roamingStrategies = {
+            "rpg", "new rpg", "move random", "grind", "quest", "gather", "travel", "follow", "pvp"
+        };
+        std::vector<std::string> suspended;
+
+        for (std::string const& strategy : roamingStrategies)
+        {
+            if (!botAI->HasStrategy(strategy, BOT_STATE_NON_COMBAT))
+                continue;
+
+            botAI->ChangeStrategy("-" + strategy, BOT_STATE_NON_COMBAT);
+            suspended.push_back(strategy);
+        }
+
+        return suspended;
+    }
+
+    void RestoreStrategies(PlayerbotAI* botAI, std::vector<std::string> const& strategies)
+    {
+        for (std::string const& strategy : strategies)
+            if (!botAI->HasStrategy(strategy, BOT_STATE_NON_COMBAT))
+                botAI->ChangeStrategy("+" + strategy, BOT_STATE_NON_COMBAT);
     }
 
     bool HandleStart(ChatHandler* handler)
@@ -167,6 +196,14 @@ namespace
             }
         }
 
+        if (existingSession == fishingSessions.end())
+            session.suspendedStrategies = SuspendRoamingStrategies(botAI);
+
+        // Selfbot activation can leave a roaming path active. Clear it before
+        // the fishing strategy takes control so its first cast is not rejected
+        // while the player is still moving.
+        player->StopMoving();
+        player->GetMotionMaster()->Clear();
         botAI->ChangeStrategy("+master fishing", BOT_STATE_NON_COMBAT);
         fishingSessions[playerGuid] = session;
 
@@ -191,7 +228,16 @@ namespace
         auto sessionIt = fishingSessions.find(player->GetGUID());
         bool hadFishingSession = sessionIt != fishingSessions.end();
         bool disableSelfBot = hadFishingSession && sessionIt->second.enabledSelfBot;
+        std::vector<std::string> suspendedStrategies;
+        if (hadFishingSession)
+            suspendedStrategies = sessionIt->second.suspendedStrategies;
         bool restoredMainHand = false;
+
+        if (hadFishingSession)
+        {
+            player->StopMoving();
+            player->GetMotionMaster()->Clear();
+        }
 
         Item* currentMainHand = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
         if (hadFishingSession && sessionIt->second.restoreMainHand && IsFishingPole(currentMainHand) &&
@@ -211,6 +257,9 @@ namespace
 
         if (hadFishingSession)
             fishingSessions.erase(sessionIt);
+
+        if (!disableSelfBot && botAI)
+            RestoreStrategies(botAI, suspendedStrategies);
 
         if (disableSelfBot && IsSelfBot(player))
         {
