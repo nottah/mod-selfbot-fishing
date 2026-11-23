@@ -10,6 +10,8 @@ This short animation shows starting selfbot fishing from CompactGM, two catches,
 
 ![Starting selfbot fishing, catching fish, and stopping from CompactGM](docs/images/compactgm-fishing-demo.gif)
 
+For the full, uncut 57-second process, [watch the WebM recording (32 MB)](docs/images/selfbot-fishing-full-process.webm).
+
 Full-size screenshots: [fishing start](docs/images/fishing-started.png) · [active cast and catch](docs/images/fishing-cast-and-catch.png).
 
 ## Requirements
