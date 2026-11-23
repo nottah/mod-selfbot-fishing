@@ -10,6 +10,15 @@ The module exposes `.sbfish start`, `.sbfish stop`, and `.sbfish status`. It ena
 - The character must have Fishing and be active as a selfbot (`.playerbots bot self`).
 - For the local stationary-fishing behavior, apply the separate patch documented in [`patches/README.md`](patches/README.md).
 
+## Selfbot permissions
+
+This module uses Playerbots' existing selfbot access rules; `.sbfish start` does not bypass them. Set `Playerbots.SelfBotLevel` in `playerbots.conf`:
+
+- `0` — selfbot disabled.
+- `1` — GM accounts only (the Playerbots default).
+- `2` — all player accounts.
+- `3` — activate selfbot automatically on login.
+
 ## Build and use
 
 Add this directory under `modules/`, rebuild the worldserver, and restart it. In game, use:
