@@ -4,6 +4,14 @@ Small selfbot fishing controller for AzerothCore with `mod-playerbots`.
 
 The module exposes `.sbfish start`, `.sbfish stop`, and `.sbfish status`. It enables Playerbots' existing `master fishing` strategy on the issuing selfbot. That strategy searches nearby game objects for fishing pools, finds a nearby shore position, casts, and uses the bobber when it is ready.
 
+## Example run
+
+These screenshots show the selfbot starting at a fishing spot and continuing to cast while the chat reports fishing skill and loot.
+
+![Selfbot fishing starts and confirms the equipped pole](docs/images/fishing-started.png)
+
+![Selfbot continues fishing while reporting a catch and skill increase](docs/images/fishing-cast-and-catch.png)
+
 ## Requirements
 
 - AzerothCore WotLK with `mod-playerbots` enabled.
