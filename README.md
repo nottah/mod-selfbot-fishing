@@ -6,11 +6,11 @@ The module exposes `.sbfish start`, `.sbfish stop`, and `.sbfish status`. It ena
 
 ## Example run
 
-These screenshots show the selfbot starting at a fishing spot and continuing to cast while the chat reports fishing skill and loot.
+This short animation shows starting selfbot fishing from CompactGM, two catches, and stopping fishing from the same menu. The quiet time between starting and stopping is cut; the actions remain in their original order.
 
-![Selfbot fishing starts and confirms the equipped pole](docs/images/fishing-started.png)
+![Starting selfbot fishing, catching fish, and stopping from CompactGM](docs/images/compactgm-fishing-demo.gif)
 
-![Selfbot continues fishing while reporting a catch and skill increase](docs/images/fishing-cast-and-catch.png)
+Full-size screenshots: [fishing start](docs/images/fishing-started.png) · [active cast and catch](docs/images/fishing-cast-and-catch.png).
 
 ## Requirements
 
