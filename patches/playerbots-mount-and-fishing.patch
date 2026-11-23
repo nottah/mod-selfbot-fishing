@@ -1,0 +1,94 @@
+diff --git a/src/Ai/Base/Actions/CheckMountStateAction.cpp b/src/Ai/Base/Actions/CheckMountStateAction.cpp
+index cacc7518..e1df5589 100644
+--- a/src/Ai/Base/Actions/CheckMountStateAction.cpp
++++ b/src/Ai/Base/Actions/CheckMountStateAction.cpp
+@@ -18,9 +18,11 @@
+ #include "Playerbots.h"
+ #include "ServerFacade.h"
+ #include "SpellAuraEffects.h"
++#include "Timer.h"
+ 
+ static constexpr uint32 SPELL_COLD_WEATHER_FLYING = 54197;
+ static constexpr float PARACHUTE_LAND_THRESHOLD = 15.0f;
++static constexpr uint32 AUTONOMOUS_MOUNT_IDLE_DELAY_MS = 5000;
+ 
+ // Preferred mounts per bot, loaded once at startup by LoadPreferredMounts()
+ std::unordered_map<uint32, PreferredMountCache> CheckMountStateAction::mountCache;
+@@ -84,6 +86,20 @@ bool CheckMountStateAction::Execute(Event /*event*/)
+     }
+     ClearStaleFlightFlags();
+ 
++    // Fishing needs the bot stationary at the shore. The normal mount-state
++    // check otherwise sees no combat target and remounts an autonomous selfbot
++    // while the master-fishing strategy is trying to cast or use its bobber.
++    if (botAI->HasStrategy("master fishing", BOT_STATE_NON_COMBAT))
++    {
++        autonomousMountEligibleSince = 0;
++        if (bot->IsMounted())
++        {
++            Dismount();
++            return true;
++        }
++        return false;
++    }
++
+     // Determine if there are no attackers
+     bool noAttackers = !AI_VALUE2(bool, "combat", "self target") || !AI_VALUE(uint8, "attacker count");
+     bool enemy = AI_VALUE(Unit*, "enemy player target");
+@@ -107,6 +123,19 @@ bool CheckMountStateAction::Execute(Event /*event*/)
+         shouldMount = true;
+     }
+ 
++    bool inBattleground = bot->InBattleground();
++    bool const noRealMaster = (!master || master == bot);
++    bool const autonomousMountEligible = noRealMaster && !inBattleground &&
++        !bot->IsMounted() && noAttackers && shouldMount && !bot->IsInCombat();
++
++    if (autonomousMountEligible)
++    {
++        if (!autonomousMountEligibleSince)
++            autonomousMountEligibleSince = getMSTime();
++    }
++    else
++        autonomousMountEligibleSince = 0;
++
+     // If should dismount, or master (if any) is no longer in travel form, yet bot still is, remove the shapeshifts
+     if (shouldDismount ||
+         (masterInShapeshiftForm != FORM_TRAVEL && botInShapeshiftForm == FORM_TRAVEL) ||
+@@ -120,9 +149,6 @@ bool CheckMountStateAction::Execute(Event /*event*/)
+         return true;
+     }
+ 
+-    bool inBattleground = bot->InBattleground();
+-    bool const noRealMaster = (!master || master == bot);
+-
+     // If there is a master and bot not in BG, follow master's mount state regardless of group leader
+     if (!noRealMaster && !inBattleground)
+     {
+@@ -141,7 +167,14 @@ bool CheckMountStateAction::Execute(Event /*event*/)
+     // No real master (random bot or SelfBot) OR bot in BG
+     if ((noRealMaster || inBattleground) && !bot->IsMounted() &&
+         noAttackers && shouldMount && !bot->IsInCombat())
++    {
++        if (!inBattleground && autonomousMountEligibleSince &&
++            GetMSTimeDiffToNow(autonomousMountEligibleSince) < AUTONOMOUS_MOUNT_IDLE_DELAY_MS)
++            return false;
++
++        autonomousMountEligibleSince = 0;
+         return Mount();
++    }
+ 
+     if (!bot->IsFlying() && shouldDismount && bot->IsMounted() &&
+         (enemy || dps || (!noAttackers && bot->IsInCombat())))
+diff --git a/src/Ai/Base/Actions/CheckMountStateAction.h b/src/Ai/Base/Actions/CheckMountStateAction.h
+index 50f7624f..f3cffb15 100644
+--- a/src/Ai/Base/Actions/CheckMountStateAction.h
++++ b/src/Ai/Base/Actions/CheckMountStateAction.h
+@@ -49,6 +49,7 @@ private:
+     Player* master;
+     ShapeshiftForm masterInShapeshiftForm;
+     ShapeshiftForm botInShapeshiftForm;
++    uint32 autonomousMountEligibleSince = 0;
+     static std::unordered_map<uint32, PreferredMountCache> mountCache;
+     float CalculateDismountDistance() const;
+     float CalculateMountDistance() const;

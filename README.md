@@ -1,0 +1,35 @@
+# mod-selfbot-fishing
+
+Small selfbot fishing controller for AzerothCore with `mod-playerbots`.
+
+The module exposes `.sbfish start`, `.sbfish stop`, and `.sbfish status`. It enables Playerbots' existing `master fishing` strategy on the issuing selfbot. That strategy searches nearby game objects for fishing pools, finds a nearby shore position, casts, and uses the bobber when it is ready.
+
+## Requirements
+
+- AzerothCore WotLK with `mod-playerbots` enabled.
+- The character must have Fishing and be active as a selfbot (`.playerbots bot self`).
+- For the local stationary-fishing behavior, apply the separate patch documented in [`patches/README.md`](patches/README.md).
+
+## Build and use
+
+Add this directory under `modules/`, rebuild the worldserver, and restart it. In game, use:
+
+- `.sbfish start` — activate the existing Playerbots fishing strategy.
+- `.sbfish stop` — remove the fishing strategy and any pending bobber-use strategy.
+- `.sbfish status` — show whether fishing is active.
+
+The module reuses Playerbots' stock fishing behavior. It does not make independent changes to pool selection or pathfinding. This module makes no database changes.
+
+## Playerbots source patch
+
+The local server checkout has an additional change to `CheckMountStateAction` so a selfbot remains dismounted while the `master fishing` strategy is active, and autonomous bots wait five seconds before remounting after becoming eligible. The exact patch and base commit are recorded in [`patches/README.md`](patches/README.md). The module can compile without that patch, but the local stationary-fishing behavior depends on it.
+
+## License
+
+The original selfbot fishing module is licensed under the MIT License; see [`LICENSE`](LICENSE). The separate patch under `patches/` modifies GPL-2.0-only Playerbots source and is licensed under GPL-2.0-only; see [`patches/LICENSE`](patches/LICENSE). AzerothCore and Playerbots remain under their own licenses.
+
+## Compatibility and provenance
+
+This is an unofficial community module for AzerothCore WotLK with `mod-playerbots`. It was developed in a Yu'Lon-managed local installation whose server source came from `mod-playerbots/azerothcore-wotlk` at commit `32fd3472aa74961c91cb9bc942ee3e0a44b36779`, with `mod-playerbots/mod-playerbots` at commit `ecc4a537a3b43056e412fae63fb4a4271849b472`. The included patch is a local change against that Playerbots commit. Yu'Lon manages the installation; it is not the source of the upstream core or Playerbots code. Compatibility with other revisions is not guaranteed.
+
+This project is not affiliated with or endorsed by AzerothCore, the Playerbots project, Yu'Lon, Blizzard Entertainment, or World of Warcraft.
